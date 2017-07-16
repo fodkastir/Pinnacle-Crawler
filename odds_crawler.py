@@ -69,7 +69,7 @@ def getOdds(api_user, api_pass, sportId, leagueid, since):
     return result, last, ctime
 
 def main (db_user, db_pass, api_user, api_pass, time_interval):
-    db_info = {'HOST':'yen-wang.c0jtpdlmhlgh.us-east-2.rds.amazonaws.com',
+    db_info = {'HOST':'yen-wang.clcafikcugph.ap-northeast-1.rds.amazonaws.com',
        'PORT':3306,
        'USER':db_user,
        'PASSWD':db_pass,
