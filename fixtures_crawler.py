@@ -21,13 +21,14 @@ from time import gmtime, strftime, sleep
 df = pd.read_excel('leaguesID.xlsx', sheetname='Soccer')
 leagueid = str(df['leagueid'].tolist())[1:-1]
 
-def getOdds(api_user, api_pass, sportId, leagueid, since):
+# define get Fixtures function
+def getFixtures(api_user, api_pass, sportId, leagueid, since):
     
     # switch form of url depends on if since are entered
     if since != 0:
-        url = 'https://api.pinnaclesports.com/v1/odds?sportId={}&since={}&oddsFormat=Decimal&leagueIds='.format(sportId,since) + leagueid
+        url = 'https://api.pinnaclesports.com/v1/fixtures?sportId={}&since={}&leagueIds='.format(sportId,since) + leagueid
     else:
-        url = 'https://api.pinnaclesports.com/v1/odds?sportId={}&oddsFormat=Decimal&leagueIds='.format(sportId) + leagueid
+        url = 'https://api.pinnaclesports.com/v1/fixtures?sportId={}&leagueIds='.format(sportId) + leagueid
     
     # get json file and convert to dict 
     b64str = "Basic " + base64.b64encode('{}:{}'.format(api_user ,api_pass).encode('utf-8')).decode('ascii')
@@ -39,31 +40,20 @@ def getOdds(api_user, api_pass, sportId, leagueid, since):
 
     req = requests.get(url, headers=headers)
     data = json.loads(req.text)
-
+   
     # record server time
     ctime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-    
+
     # create result list
     result = []
     last = data['last'] 
     
     # loop over event and apppend data to result list 
-    for league in data['leagues']:
+    for league in data['league']:
         leagueid = league['id']
         for event in league['events']:
-            eventid = event['id']
-            for line in event['periods']:
-                
-                # if there is no max spread data, fill null
-                # escape obs without max spread value
-                if line.get('maxSpread') != None:
-                    try:
-                        result.append(tuple([ctime,leagueid,eventid,line['lineId'],line['number'],line['maxMoneyline'],line['maxSpread'],\
-                                       line['maxTeamTotal'],line['maxTotal']]+ list(line['moneyline'].values())\
-                                      + list(line['spreads'][0].values()) + list(line['totals'][0].values())))
-                    except:
-                        result.append(tuple([ctime,leagueid,eventid,line['lineId'],line['number'],'NULL',line['maxSpread'],'NULL',line['maxTotal']]\
-                        + ['NULL', 'NULL', 'NULL'] + list(line['spreads'][0].values()) + list(line['totals'][0].values())))
+            result.append(tuple([event['starts'],leagueid,event['id'],event['status'],\
+                                 event['home'],event['away'],event['rotNum']]))
 
     return result, last, ctime
 
@@ -78,10 +68,9 @@ def main (db_user, db_pass, api_user, api_pass, time_interval):
     last = 0
     while type(last) == int:
         try:
-            # fetch data
-            result, last, ctime = getOdds(api_user, api_pass, 29, leagueid, last)
-            values = ', '.join(map(str, result)).replace("'NULL'",'NULL')
-            sql = "INSERT INTO odds VALUES {}".format(values)
+            result, last, ctime = getFixtures(api_user, api_pass, 29, leagueid, last)
+            values = ', '.join(map(str, result))
+            sql = "REPLACE INTO fixtures VALUES {}".format(values) 
             cur.execute(sql)
             conn.commit()
 
@@ -89,10 +78,10 @@ def main (db_user, db_pass, api_user, api_pass, time_interval):
             print(ctime,': successfully fetch {} obs'.format(len(result)))
             sleep(int(time_interval))
         except:
-            # if nothing to fetch, print log and sleep
             ctime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
             print(ctime,': nothing to fetch at this moment')
             sleep(int(time_interval))
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
