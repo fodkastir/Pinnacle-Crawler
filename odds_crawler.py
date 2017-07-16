@@ -88,7 +88,7 @@ def main (db_user, db_pass, api_user, api_pass, time_interval):
 
         # print log
         print(ctime,': successfully fetching {} obs'.format(len(result)))
-        sleep(time_interval)
+        sleep(str(time_interval))
         # except:
         #     # if nothing to fetch, print log and sleep
         #     ctime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
