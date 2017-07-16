@@ -77,7 +77,7 @@ def main (db_user, db_pass, api_user, api_pass, time_interval):
     conn = get_conn(db_info)
     cur = init_cur(conn)
     last = 0
-    while:
+    while type(last) == int:
         try:
             # fetch data
             result, last, ctime = getOdds(api_user, api_pass, 29, leagueid, last)
