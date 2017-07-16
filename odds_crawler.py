@@ -78,22 +78,22 @@ def main (db_user, db_pass, api_user, api_pass, time_interval):
     cur = init_cur(conn)
     last = 0
     while type(last) == int:
-        #try:
-        # fetch data
-        result, last, ctime = getOdds(api_user, api_pass, 29, leagueid, last)
-        values = ', '.join(map(str, result)).replace("'NULL'",'NULL')
-        sql = "INSERT INTO odds VALUES {}".format(values)
-        cur.execute(sql)
-        conn.commit()
+        try:
+            # fetch data
+            result, last, ctime = getOdds(api_user, api_pass, 29, leagueid, last)
+            values = ', '.join(map(str, result)).replace("'NULL'",'NULL')
+            sql = "INSERT INTO odds VALUES {}".format(values)
+            cur.execute(sql)
+            conn.commit()
 
-        # print log
-        print(ctime,': successfully fetching {} obs'.format(len(result)))
-        sleep(int(time_interval))
-        # except:
-        #     # if nothing to fetch, print log and sleep
-        #     ctime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        #     print(ctime,': nothing to fetch at this moment')
-        #     sleep(int(time_interval))
+            # print log
+            print(ctime,': successfully fetching {} obs'.format(len(result)))
+            sleep(int(time_interval))
+        except:
+            # if nothing to fetch, print log and sleep
+            ctime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            print(ctime,': nothing to fetch at this moment')
+            sleep(int(time_interval))
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
