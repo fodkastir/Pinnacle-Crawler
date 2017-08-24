@@ -23,13 +23,9 @@ leagueid = str(df['leagueid'].tolist())[1:-1]
 
 
 # define get settledFixtures function
-def getSettledFixtures(api_user, api_pass, sportId, leagueid, since):
+def getSettledFixtures(api_user, api_pass, sportId, leagueid):
     
-    # switch form of url depends on if since are entered
-    if since != 0:
-        url = 'https://api.pinnaclesports.com/v1/fixtures/settled?sportId={}&since={}&leagueIds='.format(sportId,since) + leagueid
-    else:
-        url = 'https://api.pinnaclesports.com/v1/fixtures/settled?sportId={}&leagueIds='.format(sportId) + leagueid
+    url = 'https://api.pinnaclesports.com/v1/fixtures/settled?sportId={}&leagueIds='.format(sportId) + leagueid
     
     # get json file and convert to dict 
     b64str = "Basic " + base64.b64encode('{}:{}'.format(api_user ,api_pass).encode('utf-8')).decode('ascii')
@@ -47,7 +43,6 @@ def getSettledFixtures(api_user, api_pass, sportId, leagueid, since):
 
     # create result list
     result = []
-    last = data['last'] 
     
     # loop over event and apppend data to result list 
     for league in data['leagues']:
@@ -58,7 +53,7 @@ def getSettledFixtures(api_user, api_pass, sportId, leagueid, since):
                 result.append(tuple([period['settledAt'],leagueid,eventid,period['settlementId'],\
                                      period['number'],period['status'],period['team1Score'],period['team2Score'] ]))
 
-    return result, last, ctime
+    return result, ctime
 
 def main (db_user, db_pass, api_user, api_pass, time_interval):
     db_info = {'HOST':'yen-wang.clcafikcugph.ap-northeast-1.rds.amazonaws.com',
@@ -69,22 +64,17 @@ def main (db_user, db_pass, api_user, api_pass, time_interval):
     conn = get_conn(db_info)
     cur = init_cur(conn)
     last = 0
+    oldresult = 0 
     while type(last) == int:
-        try:
-            result, last, ctime = getSettledFixtures(api_user, api_pass, 29, leagueid, last)
-            values = ', '.join(map(str, result))
-            sql = "REPLACE INTO settledfixtures VALUES {}".format(values) 
-            cur.execute(sql)
-            conn.commit()
+        result, ctime = getSettledFixtures(api_user, api_pass, 29, leagueid)
+        values = ', '.join(map(str, result))
+        sql = "REPLACE INTO settledfixtures VALUES {}".format(values) 
+        cur.execute(sql)
+        conn.commit()
 
-            # print log
-            print(ctime,': successfully fetch {} obs'.format(len(result)))
-            sleep(int(time_interval))
-        except:
-            ctime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-            print(ctime,': nothing to fetch at this moment')
-            sleep(int(time_interval))
-
+        # print log
+        print(ctime,': successfully fetch {} obs'.format(len(result)))
+        sleep(int(time_interval))
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
